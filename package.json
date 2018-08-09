@@ -19,7 +19,8 @@
     "commander": "^2.17.1",
     "execa": "^0.10.0",
     "handlebars": "^4.0.11",
-    "inquirer": "^6.1.0"
+    "inquirer": "^6.1.0",
+    "ncp": "^2.0.0"
   },
   "bin": {
     "crab": "./index.js"
