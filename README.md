@@ -11,9 +11,18 @@ Crab differs from that latter in three core ways.
 3. Where Create React App is setup and built with Webpack, crab uses [ParcelJS](https://parceljs.org/). Parcel is much more user-friendly and provides support for a huge amount of the modern web world with zero config.
 
 
+## Installation and basic usage
+```
+npm install -g crab
+crab create octopus-garden
+cd octopus-garden
+parcel index.html
+```
 
 
 ## Usage
+
+
 
 ### generate
 
