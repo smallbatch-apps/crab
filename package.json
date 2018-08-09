@@ -1,7 +1,11 @@
 {
-  "name": "crab",
+  "name": "crab-cli",
   "version": "0.0.2",
-  "description": "Create-React-App that doesn't completely suck",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/smallbatch-apps/crab.git"
+  },
+  "description": "Create-React-App that does what you need",
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
