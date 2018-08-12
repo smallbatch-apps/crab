@@ -23,6 +23,9 @@ parcel index.html
 ## Usage
 
 
+### create
+
+Despite being the core functionality this is **not** yet ready for prime time. At present it will only show debug output. It should be operational within 48 hours.
 
 ### generate
 
@@ -91,7 +94,7 @@ The only chance to save your app is a single confirmation.
 
 For tab-completion purposes, `crab destroy` supports the `.js` file extension, but it is not required.
 
-## crab
+#### crab
 
 The core purpose of the `crab` CLI package is to allow you to execute `crab crab`. This will output a 🦀.
 

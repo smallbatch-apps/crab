@@ -1,0 +1,47 @@
+@import url('https://fonts.googleapis.com/css?family=Bangers');
+
+body, html {
+  background-color: #ECE2C6;
+  height: 100%;
+
+  #root {
+    height: 100%;
+  }
+
+  h1, h2, h3, h4 {
+    font-family: 'Bangers', cursive;
+  }
+  
+  footer {
+    font-family: 'Bangers', cursive;
+  }
+  
+
+  h1 {
+    background: -webkit-linear-gradient(#BCDEFA, #EFF8FF);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+  .main-container {
+    min-height: 100%;
+
+    .blue {
+      background: linear-gradient(#3490DC, #2779BD);
+      clip-path: polygon(0 0, 100% 0, 100% 80%, 0 100%);
+    }
+
+    .green {
+      clip-path: polygon(0 40px, 100% 0%, 100% 100%, 0 100%);
+      background: linear-gradient(#1F9D55, #38C172);
+      
+    }
+    
+    .nav {
+      a.active {
+        background-color: #2779bd;
+      }
+    }
+
+  }
+  
+}

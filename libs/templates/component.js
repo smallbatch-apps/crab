@@ -1,7 +1,11 @@
 import React, { Component } from 'react';
-{{#if imports}}{{#each imports}}{{{this}}}
+{{#if redux}}
+import { bindActionCreators } from 'redux';
+import { connect } from 'react-redux';
+{{/if}}{{#if imports}}{{#each imports}}{{{this}}}
+{{/each}}{{/if}}{{#if components}}{{#each components}}import {{this}} from './{{this}}';
 {{/each}}{{/if}}
-class {{componentName}} extends Component {
+class {{resourceName}} extends Component {
   constructor(props) {
     super(props);
     this.state = {};
@@ -18,5 +22,16 @@ class {{componentName}} extends Component {
     </div>);
   }
 }
+{{#if redux}}
+function mapDispatchToProps(dispatch){
+  return bindActionCreators({}, dispatch);
+}
 
-export default {{componentName}};
+function mapStateToProps(state){
+  return {}
+}
+
+export default connect(mapStateToProps, mapDispatchToProps)({{resourceName}});
+{{else}}
+export default {{resourceName}};
+{{/if}}
