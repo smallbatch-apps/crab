@@ -1,1 +1,7 @@
+testbed/
 node_modules/
+.vscode/
+.idea/
+.env
+.env.*
+.DS_Store

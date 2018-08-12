@@ -118,15 +118,12 @@ const create = async function(name, cmd) {
   }
 
   const args = utils.cleanArgs(cmd);
-  
+
   if (fs.existsSync(`${process.cwd()}/${name}`)) {
     log.danger(`Directory "${name}" already exists. You cannot create a project there.`);
     return;
   }
   log.crab('copying app template files');
-  // utils.copyAppTemplate(name).then(function(){
-  //   process.chdir(`${process.cwd()}/testbed/${name}`);
-  // });
 
   await ncp(`${__dirname}/templates/app`, `testbed/${name}`, function (err) {
     if (err) {
@@ -141,24 +138,32 @@ const create = async function(name, cmd) {
     let dependencies = ['react', 'react-router-dom', 'babel-polyfill'];
 
     if (args.redux) {
+      log.crab('saving redux files');
       dependencies.push('redux', 'react-redux');
-      ncp(`${__dirname}/templates/redux`, `testbed/${name}`);
+      ncp(`${__dirname}/templates/redux`, `${process.cwd()}/redux`, (error) => {
+        if (error) {
+          console.error(error);
+        }
+        log.success('Redux files added');
+      });
     }
 
     log.crab('Installing code dependencies. This can take a while depending on whether NPM has cached them.');
     execa.shellSync(`npm install --save ${dependencies.join(' ')}`);
+    log.success('Dependencies installed');
     log.crab('Installing build dependencies. This should be pretty quick.');
     execa.shellSync('npm install --save-dev node-sass');
-    
-    //console.log(args);
+    log.success('Installed');
 
     if (args.git) {
       log.crab('initialising Git for version control');
       execa.shellSync('git init');
-      fs.copyFile(`${__dirname}/templates/.gitignore`, process.cwd());
+      fs.copyFile(`${__dirname}/templates/.gitignore`, `${process.cwd()}/.gitignore`, (error) => {
+        if (error) {
+          console.error(error);
+        }
+      });
     }
-
-    //create index.html
 
     fs.readFile(`${__dirname}/templates/app-index.js`, 'utf8', (error, data) => {
       if (error) {
@@ -167,13 +172,11 @@ const create = async function(name, cmd) {
       }
       
       let template = handlebars.compile(data);
-      const resourceNameArray = name.split('/');
-      let redux = args.redux;
       let finishedTemplate = template(args);
     
       const writeOptions = { encoding: 'utf8', flag: 'wx' };
       
-      fs.writeFile(`${process.cwd()}/${name}.js`, finishedTemplate, writeOptions, (error) => {
+      fs.writeFile(`${process.cwd()}/index.js`, finishedTemplate, writeOptions, (error) => {
         if(error === null) {
           log.success(`Saved index.html successfully. You now just need to run "cd ${name}" and then run "parcel index.html" and it will be golden.`);
         } else {
