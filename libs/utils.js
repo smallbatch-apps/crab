@@ -14,7 +14,7 @@ const handleParcel = async () => {
   if (answers.installParcel) {
     log.crab('Installing parcel, please wait');
     execa.shellSync('npm install -g parcel-bundler');
-    log.success('Parcel installed successfully. Moving on.');
+    log.success('Parcel installed successfully. This has broken the flow a little bit so please run your command again and it can go through successfully.');
   } else {
     log.danger('Cannot continue without Parcel installation. Closing now.');
   }
