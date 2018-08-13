@@ -25,7 +25,28 @@ parcel index.html
 
 ### create
 
-Despite being the core functionality this is **not** yet ready for prime time. At present it will only show debug output. It should be operational within 48 hours.
+Create a new React app with crab, scaffolding up an app into the provided directory.
+
+The app created is built for rapid development, and is set up with some example routes, instructions for how to get started, working sass impementation, and support for some advanced JavaScript features like async/await.
+
+Optionally you can also scaffold with full Redux support, which will handle all the boilerplate and bindings that comes with React + Redux.
+
+```
+cd ~/Code
+crab create my-new-app --redux
+cd my-new-app
+crab generate components/ContactUs --redux
+parcel index.html
+code .
+```
+This will create an app with redux support, build and serve the application at http://localhost:1234 with hot module reloading, add a new redux-aware component for a contact page, and open it for editing in Visual Studio Code.
+
+Options are:
+
+| Option           | Description | 
+| ---------------- |-------------| 
+| `-r, --redux` | Adds redux setup, installing dependencies and setting up the store |
+| `--no-git ` |  Skip git support, don't initialise repo |
 
 ### generate
 
@@ -56,6 +77,7 @@ Options are:
 | Option           | Description | 
 | ---------------- |-------------| 
 | `-f, --functional` | Creates a functional rather than class based component |
+| `-r, --redux` | Adds redux setup to the component (ignored by functional component) |
 | `--content <string>` | Content to put into the render block. Line breaks will be respected and can just be entered like so: `</h2>\n<p>`|
 | `--imports <string>` | Pre-written import statements to include in the head. Again, line breaks are respected. |
 
