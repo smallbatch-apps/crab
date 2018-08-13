@@ -166,7 +166,7 @@ const create = async function(name, cmd) {
         }
       }
 
-      fs.copyFile(`${__dirname}/templates/.gitignore`, `${process.cwd()}/.gitignore`, (error) => {
+      fs.copyFile(`${__dirname}/templates/gitignore.hbs`, `${process.cwd()}/.gitignore`, (error) => {
         if (error) {
           console.error(error);
           return false;
