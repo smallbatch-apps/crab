@@ -99,7 +99,6 @@ const create = async function(name, cmd) {
   catch(error) {
     if (error.code === 127) {
       utils.handleParcel();
-      return;
     } 
   }
 
