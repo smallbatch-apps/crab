@@ -1,6 +1,8 @@
 const log = require('./log');
 const ncp = require('ncp').ncp;
 const inquirer = require('inquirer');
+const chalk = require('chalk');
+const execa = require('execa');
 
 const handleParcel = async () => {  
   let answers = await inquirer.prompt({
