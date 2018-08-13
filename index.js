@@ -16,9 +16,9 @@ program
   .option('--imports <imports>', 'Add import statements')
   .action(commands.generate);
 
-program.command('new [project-name]')
-  .alias('create')
-  .description('Make a new project')
+program.command('create <project-name>')
+  .alias('new')
+  .description('Make a new project in the <project-name> directory')
   .option('-r,--redux', 'Include redux boilerplate and structure')
   .option('--no-git', 'Do not include git files and init process')
   .action(commands.create);

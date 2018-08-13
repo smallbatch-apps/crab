@@ -17,6 +17,14 @@ const handleParcel = async () => {
   }
 }
 
+const resolveTemplateFile = (type, args) => {
+  if (type === 'component') {
+    return args.functional ? 'component-functional.js' : 'component.js';
+  }
+
+  return `${type}.js`;
+}
+
 const copyAppTemplate = async (name) => {
   log.crab('Copying app files');
 
@@ -63,4 +71,4 @@ const cleanArgs = (cmd) => {
   return args
 }
 
-module.exports = { handleParcel, cleanArgs, copyAppTemplate, hasValidArgs };
+module.exports = { handleParcel, cleanArgs, copyAppTemplate, resolveTemplateFile, hasValidArgs };

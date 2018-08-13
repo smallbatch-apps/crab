@@ -47,8 +47,8 @@ const generate = async (type, name, cmd) => {
     name = name.substring(0, name.length - 3);
   }
   
-  let templateFile = args.functional ? 'component-functional.js' : 'component.js';
-  
+  let templateFile = utils.resolveTemplateFile(type, args);
+
   fs.readFile(`${__dirname}/templates/${templateFile}`, 'utf8', (error, data) => {
     if (error) {
       log.danger('Could not read template file');
@@ -76,7 +76,7 @@ const generate = async (type, name, cmd) => {
     
     fs.writeFile(`${process.cwd()}/${name}.js`, finishedTemplate, writeOptions, (error) => {
       if(error === null) {
-        log.success(`${type.toUpperCase()} ${name} successfully created`);
+        log.success(`Your ${type} ${name} successfully created`);
       } else {
         errors.writeGeneratedFile(error);
       }
@@ -125,13 +125,13 @@ const create = async function(name, cmd) {
   }
   log.crab('copying app template files');
 
-  await ncp(`${__dirname}/templates/app`, `testbed/${name}`, function (err) {
+  await ncp(`${__dirname}/templates/app`, name, function (err) {
     if (err) {
       console.error(err);
       return;
     }
-    log.success('done!');
-    process.chdir(`testbed/${name}`);
+    log.success('done!\n\n');
+    process.chdir(name);
     log.crab('Initialising dependency management');
     execa.shellSync('npm init -y');
 
@@ -150,18 +150,28 @@ const create = async function(name, cmd) {
 
     log.crab('Installing code dependencies. This can take a while depending on whether NPM has cached them.');
     execa.shellSync(`npm install --save ${dependencies.join(' ')}`);
-    log.success('Dependencies installed');
-    log.crab('Installing build dependencies. This should be pretty quick.');
+    log.success('Dependencies installed\n');
+    log.crab('Installing dev dependencies. This can also take a bit.');
     execa.shellSync('npm install --save-dev node-sass');
-    log.success('Installed');
+    log.success('Dev dependencies installed\n');
 
     if (args.git) {
       log.crab('initialising Git for version control');
-      execa.shellSync('git init');
+      let moveGitFiles = true;
+      try{
+        execa.shellSync('git init');
+      } catch(error) {
+        if (error.code === 127) {
+          log.warn('Git is not available. You can avoid this warning in future by using the --no-git option.');
+        }
+      }
+
       fs.copyFile(`${__dirname}/templates/.gitignore`, `${process.cwd()}/.gitignore`, (error) => {
         if (error) {
           console.error(error);
+          return false;
         }
+        log.success('Git initialised');
       });
     }
 
@@ -178,7 +188,8 @@ const create = async function(name, cmd) {
       
       fs.writeFile(`${process.cwd()}/index.js`, finishedTemplate, writeOptions, (error) => {
         if(error === null) {
-          log.success(`Saved index.html successfully. You now just need to run "cd ${name}" and then run "parcel index.html" and it will be golden.`);
+          log.success(`Saved index.html successfully. That's the last step.\n\n`);
+          log.crab(`You now just need to run "cd ${name}" and then run "parcel index.html" and your app will be running at http://localhost:1234.`);
         } else {
           log.error('An error has occured at the final step, creating the index.html file');
         }

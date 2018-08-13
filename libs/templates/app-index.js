@@ -23,6 +23,6 @@ ReactDOM.render(
 {{else}}
 <BrowserRouter>
   <App />
-</BrowserRouter>
+</BrowserRouter>,
 {{/if}}
 document.getElementById('root'));

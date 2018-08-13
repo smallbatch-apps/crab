@@ -12,7 +12,7 @@ class App extends Component {
       <div className="item blue flex-initial">
         <div className="container mx-auto my-10">
           <div className="flex">
-            <div className="flex-auto"><h1 className="text-4xl">CRAB!</h1></div>
+            <div className="flex-auto"><h1 className="text-4xl text-blue-lightest">CRAB!</h1></div>
             <div className="flex-auto text-right nav">
               <NavLink to="/" exact className="text-blue-lightest border bg-blue hover:bg-blue-dark rounded px-5 py-2 no-underline">Home</NavLink>
               <NavLink to="/about-crab" className="ml-3 text-blue-lightest bg-blue hover:bg-blue-dark border rounded px-5 py-2 no-underline">About Crab</NavLink>
