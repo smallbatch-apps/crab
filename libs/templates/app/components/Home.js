@@ -17,7 +17,7 @@ const Home = (props) => {
 
       <p className="my-5">The crab cli tool allows you to quickly build out the components that make up your React app. Though it's not able to help with importing them into each other (yet) it can help you get started quickly.</p>
 
-      <pre class="bg-black rounded text-white p-4 w-full mt-5">cd components<br />
+      <pre className="bg-black rounded text-white p-4 w-full mt-5">cd components<br />
 crab g TodoList<br />
 crab g TodoItem -f<br />
 crab g ItemCheckbox -f<br />
