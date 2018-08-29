@@ -1,0 +1,32 @@
+{
+  "name": "crab-cli",
+  "version": "0.0.8",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/smallbatch-apps/crab.git"
+  },
+  "description": "Create-React-App that does what you need",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "create-react-app",
+    "react",
+    "generator",
+    "component"
+  ],
+  "author": "Matt Burgess",
+  "license": "ISC",
+  "dependencies": {
+    "chalk": "^2.4.1",
+    "commander": "^2.17.1",
+    "execa": "^0.10.0",
+    "handlebars": "^4.0.11",
+    "inquirer": "^6.1.0",
+    "ncp": "^2.0.0"
+  },
+  "bin": {
+    "crab": "./index.js"
+  }
+}
