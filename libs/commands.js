@@ -14,7 +14,7 @@ const destroy = async (name, cmd) => {
     name: 'deleteComponent',
     message: chalk.red('Are you ABSOLUTELY sure you want to delete this component file?')
   });
-  
+
   if(name.substr(-3) === '.js') {
     name = name.substring(0, name.length - 3);
   }
@@ -39,7 +39,7 @@ const generate = async (type, name, cmd) => {
     log.danger(`🛑  ${error.message}`);
     return;
   }
-  
+
   let templateFile = utils.resolveTemplateFile(args);
 
   fs.readFile(`${__dirname}/templates/${templateFile}`, 'utf8', (error, data) => {
@@ -47,19 +47,18 @@ const generate = async (type, name, cmd) => {
       log.danger(`🛑  Could not read template file: ${__dirname}/templates/${utils.templateDirectory(args)}/${templateFile}`);
       return;
     }
-    
+
     let template = handlebars.compile(data);
     let filePath = utils.resolveGeneratedFilePath(args);
 
     args.pathToRedux = utils.getPathToRedux(filePath, args);
-    
+
     if (args.isRoute && !args.content) {
       args.content = utils.createRouteDefaultContent(args);
     }
 
-    
+
     let finishedTemplate = template(args);
-    
     fs.writeFile(filePath, finishedTemplate, { encoding: 'utf8', flag: 'wx' }, (error) => {
       if(error === null) {
         log.success(`✅  Your ${args.type} ${args.resourceName} successfully created`);
@@ -83,7 +82,7 @@ const crab = (cmd) => {
 
 const create = async function(name, cmd) {
   log.log(`🦀  Creating new project in ${name} directory.\n`);
-  
+
   const args = utils.cleanArgs(cmd);
 
   try {
@@ -92,7 +91,7 @@ const create = async function(name, cmd) {
     log.danger('🛑  ' + error.message);
     return;
   }
-  
+
   if (fs.existsSync(`${process.cwd()}/${name}`)) {
     log.danger(`🛑  Directory "${name}" already exists. You cannot create a project there.`);
     return;
@@ -130,9 +129,9 @@ const create = async function(name, cmd) {
 
     if (args.git && utils.checkGit(args)) {
       log.log('🦀  Initialising Git for version control');
-      
+
       execa.shellSync('git init');
-  
+
       fs.copyFile(`${__dirname}/templates/${utils.templateDirectory(args)}/gitignore.hbs`, `${process.cwd()}/.gitignore`, (error) => {
         if (error) {
           console.error(error);
@@ -141,7 +140,7 @@ const create = async function(name, cmd) {
         log.success('✅  Git initialised\n');
       });
     }
-    
+
     if (args.redux) {
       log.log('🦀  Setting up redux files');
       ncp(`${__dirname}/templates/${utils.templateDirectory(args)}/redux`, `${process.cwd()}/redux`, (error) => {
@@ -164,14 +163,14 @@ const create = async function(name, cmd) {
           log.success('✅  Saved created .crabfile');
         } catch(error) {
           log.warn('⚠️ Unable to create crabfile to save your project settings.');
-        }        
+        }
       }
-      
+
       let template = handlebars.compile(data);
       let finishedTemplate = template(args);
-    
+
       const writeOptions = { encoding: 'utf8', flag: 'wx' };
-      
+
       fs.writeFile(`${process.cwd()}/index.${args.fileExtension}`, finishedTemplate, writeOptions, (error) => {
         if(error === null) {
           log.success(`✅  Saved index.${args.fileExtension} successfully. That's the last step.\n`);
@@ -187,7 +186,7 @@ const create = async function(name, cmd) {
 
   });
 
-  
+
 }
 
 const install = (feature, cmd) => {
@@ -210,7 +209,7 @@ const install = (feature, cmd) => {
     log.danger(`🛑  This does not appear to be the root directory.`);
     return;
   }
-  
+
   if (feature === 'tailwind') {
     utils.installTailwind();
   }

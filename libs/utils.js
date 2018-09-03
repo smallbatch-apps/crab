@@ -5,32 +5,32 @@ const execa = require('execa');
 const fs = require('fs');
 const path = require('path');
 
-const installParcel = async () => {  
+const installParcel = async () => {
   let answers = await inquirer.prompt({
     type: 'confirm',
     name: 'install',
     message: 'We need parceljs installed for this to work - this is a one-time install. Install globally now?'
   });
-  
-  
+
+
   if (answers.install) {
     log.crab('🦀  Installing parcel, please wait. This will take a minute or two.');
     execa.shellSync('npm install -g parcel-bundler');
     log.success('✅  Parcel installed\n');
-  } 
+  }
   else {
     process.exitCode = 1;
     throw Error('You must install parcel to use crab. Exiting now.');
   }
 }
 
-const installTypeScript = async () => {  
+const installTypeScript = async () => {
   let answers = await inquirer.prompt({
     type: 'confirm',
     name: 'install',
     message: 'Because you want TypeScript support we need to add the tsc dependency - this is a one-time install. Install globally now?'
   });
-  
+
   if (answers.install) {
     log.crab('🦀  Installing TypeScript, please wait. This will take a minute.');
     execa.shellSync('npm install -g typescript');
@@ -49,7 +49,7 @@ const resolveTemplateFile = (args) => {
   }
 
   let templateDirectory = args.typescript ? 'typescript' : 'javascript';
-  
+
   return `${templateDirectory}/${file}.${args.fileExtension}`;
 }
 
@@ -81,9 +81,9 @@ const validateArgs = (type, args) => {
 
 const insertRouteIntoApplication = (args) => {
   const appComponentPath = `${args.rootDirectory}/components/App.${args.fileExtension}`;
-  
+
   log.log('🦀  Updating App component');
-  
+
   let file = fs.readFileSync(appComponentPath, { encoding: 'utf8' });
 
   let appArray = file.split(/\r?\n/);
@@ -107,17 +107,17 @@ const insertRouteIntoApplication = (args) => {
 
   try {
     let lastRouteLineNumber = appArray.findIndex(line => new RegExp('</Switch>').test(line)) - 1;
-  
+
     let newRoute = appArray[lastRouteLineNumber];
-  
+
     let routePath = new RegExp('path="([a-zA-Z0-9/-]+)"').exec(newRoute)[1];
     let routeComponent = new RegExp('component={([a-zA-Z0-9/-]+)}').exec(newRoute)[1];
-  
+
     newRoute = newRoute.replace(routePath, args.resourceLink)
        .replace(routeComponent, args.resourceName);
 
     appArray.splice(lastRouteLineNumber+1, 0, newRoute);
-    
+
     //log.log('✅  Route entry inserted');
     //successString += 'Route entry inserted. '
   } catch(error) {
@@ -127,7 +127,7 @@ const insertRouteIntoApplication = (args) => {
   if (args.menu) {
     try {
       let lineNumber = getLastNavLineNumber(appArray);
-      
+
       let newLink = appArray[lineNumber];
 
       let linkTo = new RegExp('to="([a-zA-Z0-9/-]+)"').exec(newLink)[1];
@@ -167,14 +167,14 @@ const getLastNavLineNumber = (appArray) => {
       if(!navArray.includes(linkLines[i])) {
         navArray.push(linkLines[i]);
       }
-      
+
       navArray.push(linkLines[i + 1]);
     }
   }
-  
+
   let navLength = navArray.length;
   if (navLength < 3) {
-    
+
     return false;
   }
 
@@ -216,25 +216,25 @@ const cleanArgs = (cmd) => {
     args = {
       rootDirectory: rootDirectory()
     };
-    args = Object.assign(loadCrabFile(args), args); 
+    args = Object.assign(loadCrabFile(args), args);
   }
-  
+
   cmd.options.forEach(o => {
     const key = o.long.replace(/^--/, '');
-    
+
     if (typeof cmd[key] !== 'function' && typeof cmd[key] !== 'undefined') {
       args[key] = cmd[key];
     }
-    
+
     if (typeof cmd[key.substr(3)] !== 'function' && typeof cmd[key.substr(3)] !== 'undefined') {
       args[key.substr(3)] = cmd[key.substr(3)];
     }
   });
-  
+
   args.fileExtension = args.typescript ? 'tsx' : 'js';
   args.command = cmd._name;
 
-  
+
 
   if (args.command === 'generate') {
     args.type = cmd.parent.args[0];
@@ -250,34 +250,34 @@ const cleanArgs = (cmd) => {
       args.resourceName = resourcePath.name;
       args.directory = resourcePath.dir;
     }
-  
+
     if (args.resourceName) {
       args.resourceDisplayName = args.resourceName.split(/(?=[A-Z])/).join(" ");
-      args.resourceLink = args.path ? 
+      args.resourceLink = args.path ?
         args.path :
         args.resourceName.split(/(?=[A-Z])/).join("-").toLowerCase();
-      
+
       if (args.resourceLink.charAt(0) !== '/') {
         args.resourceLink = '/' + args.resourceLink;
       }
     }
-  
+
     if (args.content) {
       args.content = args.content.split("\\n");
     }
-  
+
     if (args.imports) {
       args.imports = args.imports.split("\\n");
     }
-  
+
     if (args.components) {
       args.components = args.components.split(",");
     }
 
     args.isRoute = args.type === 'route';
-  
+
   }
-  
+
   return args
 }
 
@@ -290,33 +290,20 @@ const checkGit = (args) => {
       if (error.code === 127) {
         log.warn('⚠️  The default installation initialises a git repo and you don\'t have git installed. You can remove this warning by using the "--no-git" flag, but we strongly recommend you install git. Unlike global NPM dependencies, we won\'t install git.\n');
         return false;
-      } 
+      }
     }
   }
 }
 
 const updateComponentsList = (componentFile, args) => {
-  
-  const componentListFile = `${args.rootDirectory}/components/components.${args.typescript ? 'ts' : 'js'}`;
-  
-  let data = fs.readFile(componentListFile, { encoding: 'utf8', flag: 'r' }, (error,data) => {
-    let entries = data.split(/\r?\n/).filter(Boolean).map((item) => {  
-      let matchExport = /{ default as ([A-Za-z]*) }/g;
-      let match = matchExport.exec(item);
-      return match[1];
-    });
-    let exportAs = args.resourceName;
-    
-    if (entries.includes(args.resourceName)) {
-      const segment = path.dirname(componentFile).split('/').filter(Boolean).pop();
-      exportAs = ( segment.charAt(0).toUpperCase() + segment.slice(1) ) + args.resourceName ;
-    }
-  
-    const exportPath = path.relative(path.dirname(componentListFile), path.dirname(componentFile));
-    const exportFrom = `${exportPath ? exportPath : '.'}/${args.resourceName}`;
-    const exportString = `\n\nexport { default as ${exportAs} } from '${exportFrom}';`;
+
+  const componentListFile = getComponentListFile(args);
+
+  let data = fs.readFile(componentListFile, { encoding: 'utf8', flag: 'r' }, (error, data) => {
+    let entries = splitDataToEntries(data);
+
     try {
-      fs.appendFile(componentListFile, exportString, { encoding: 'utf8', flag: 'a' }, (error) => {
+      fs.appendFile(componentListFile, exportComponent(args, componentFile, entries), { encoding: 'utf8', flag: 'a' }, (error) => {
         if (!error) {
           log.success('✅  Component list updated');
         }
@@ -327,8 +314,34 @@ const updateComponentsList = (componentFile, args) => {
       }
     }
   });
-  
-  
+}
+
+const splitDataToEntries = (data) => {
+  return data.split(/\r?\n/).filter(Boolean).map((item) => {
+    let matchExport = /{ default as ([A-Za-z]*) }/g;
+    let match = matchExport.exec(item);
+    return match[1];
+  });
+}
+
+const getComponentListFile = (args) => {
+  return `${args.rootDirectory}/components/components.${args.typescript ? 'ts' : 'js'}`;
+}
+
+const exportComponent = (args, componentFile, entries) => {
+  const relativePath = path.relative(path.dirname(getComponentListFile(args)), path.dirname(componentFile));
+  const prepend = relativePath.split('/')[0] == '..' ? '' : './';
+
+  let exportAs = args.resourceName;
+
+  if (entries.includes(args.resourceName)) {
+    const segment = path.dirname(componentFile).split('/').filter(Boolean).pop();
+    exportAs = ( segment.charAt(0).toUpperCase() + segment.slice(1) ) + args.resourceName ;
+  }
+
+  const exportFrom = `${prepend}${relativePath}/${args.resourceName}`;
+
+  return `\n\nexport { default as ${exportAs} } from '${exportFrom}';`;
 }
 
 const createRouteDefaultContent = (args) => {
@@ -340,14 +353,14 @@ const createRouteDefaultContent = (args) => {
 }
 
 const checkGlobalDependencies = async (args) => {
-  
+
   if (args.command === 'create') {
     try {
       const { stdout } = execa.shellSync('parcel --version');
     } catch(error) {
       if (error.code === 127) {
         await installParcel();
-      } 
+      }
     }
 
     if (args.typescript) {
@@ -356,7 +369,7 @@ const checkGlobalDependencies = async (args) => {
       } catch(error) {
         if (error.code === 127) {
           await installTypeScript();
-        } 
+        }
       }
     }
   }
@@ -376,7 +389,7 @@ const rootDirectory = (args) => {
   }
 
   let relativePath = '';
-  
+
   for (let i = 0; i < 5; i++) {
     relativePath += '../';
     if(isRootAtPath(`${process.cwd()}/${relativePath}`)) {
@@ -415,7 +428,7 @@ module.exports = {
     log.log('You will need to manually create this file with the following content\n');
     log.log(`\n${configContent}\n`);
   }
-  
+
   try {
     fs.writeFileSync('styles/app.css', cssContent);
     log.success('CSS file created');
@@ -425,7 +438,7 @@ module.exports = {
     log.log('You will need to manually add the required css directives:');
     log.log(`\n${cssContent}\n`);
   }
-  
+
   log.success('Tailwind successfully installed\n');
   log.warn('⚠️  You will need to import the new CSS file in the Application.js file');
   log.log('Before you can use tailwind in actual code you need to make sure the css that includes the directives is what is being imported by Parcel.\n');
