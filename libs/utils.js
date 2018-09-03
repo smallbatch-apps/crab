@@ -182,16 +182,24 @@ const getLastNavLineNumber = (appArray) => {
 }
 
 const getPathToRedux = (componentPath, args) => {
-  return path.relative(path.dirname(componentPath), args.rootDirectory) + '/redux/';
+  return path.relative(path.dirname(componentPath), args.rootDirectory) + 'redux/';
 }
 
 const getPathToComponents = (componentPath, args) => {
-  return path.relative(path.dirname(componentPath), args.rootDirectory) + '/components/';
+  return safePathRelative(path.dirname(componentPath), args.rootDirectory) + 'components/';
+}
+
+const safePathRelative = (from, to) => {
+  const pathRel = path.relative(from, to);
+
+  return pathRel;
 }
 
 const templateDirectory = (args) => {
   return args.typescript ? 'typescript' : 'javascript';
 }
+
+
 
 const loadCrabFile = (args) => {
   try {
