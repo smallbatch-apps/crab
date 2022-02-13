@@ -91,7 +91,7 @@ crab g components/AboutUs -f --imports "import { Link } from 'react-router-dom';
 
 Note that you can put anything in this import/content. Crab does not verify or validate it.
 
-Note also that you don't need to use crab in any specific directory. In fact, typically you will want to run it in your `app/components` directory.
+Note also that you don't need to use crab in any specific directory. In fact, typically you will want to run it in your `src/components` directory.
 
 ### destroy
 

@@ -7,35 +7,14 @@ const chalk = require('chalk');
 const errors = require('./errors');
 const log = require('./log');
 const ncp = require('ncp').ncp;
-
-const destroy = async (name, cmd) => {
-  let rawAnswers = await inquirer.prompt({
-    type: 'confirm',
-    name: 'deleteComponent',
-    message: chalk.red('Are you ABSOLUTELY sure you want to delete this component file?')
-  });
-
-  if(name.substr(-3) === '.js') {
-    name = name.substring(0, name.length - 3);
-  }
-
-  if (rawAnswers.deleteComponent) {
-    try {
-      await fs.unlinkSync(`${process.cwd()}/${name}.js`);
-    } catch(error) {
-      errors.destroyFile(error);
-      return;
-    }
-  }
-};
+const installers = require('./installers');
 
 const generate = async (type, name, cmd) => {
   const args = utils.cleanArgs(cmd);
-  //utils.insertRouteIntoApplication(args);
 
   try {
     utils.validateArgs(type, args);
-  } catch(error) {
+  } catch (error) {
     log.danger(`🛑  ${error.message}`);
     return;
   }
@@ -60,7 +39,7 @@ const generate = async (type, name, cmd) => {
 
     let finishedTemplate = template(args);
     fs.writeFile(filePath, finishedTemplate, { encoding: 'utf8', flag: 'wx' }, (error) => {
-      if(error === null) {
+      if (error === null) {
         log.success(`✅  Your ${args.type} ${args.resourceName} successfully created`);
         utils.updateComponentsList(filePath, args);
         if (args.isRoute) {
@@ -75,144 +54,114 @@ const generate = async (type, name, cmd) => {
 
 const crab = (cmd) => {
   const args = utils.cleanArgs(cmd);
-  const crabString = args.ascii ? '(\\/)!_!(\\/)' :  '🦀';
-
-  log.crab(crabString);
+  log.crab(args.ascii ? '(\\/)!_!(\\/)' : '🦀');
 };
 
-const create = async function(name, cmd) {
-  log.log(`🦀  Creating new project in ${name} directory.\n`);
+const create = async function (name, cmd) {
+  log.log(`🦀  We have to ask you some questions first.\n`);
 
   const args = utils.cleanArgs(cmd);
 
-  try {
-    await utils.checkGlobalDependencies(args);
-  } catch(error) {
-    log.danger('🛑  ' + error.message);
-    return;
-  }
-
   if (fs.existsSync(`${process.cwd()}/${name}`)) {
-    log.danger(`🛑  Directory "${name}" already exists. You cannot create a project there.`);
+    log.danger(`🛑  Directory "${name}" already exists. You cannot create a project there.\n`);
     return;
   }
 
-  log.log('🦀  Copying app template files');
+  const language = await inquirer
+    .prompt([
+      {
+        type: 'list',
+        name: 'tsjs',
+        message: 'TypeScript or JavaScript?',
+        choices: ['TypeScript', 'JavaScript'],
+      },
+    ]);
 
-  await ncp(`${__dirname}/templates/${utils.templateDirectory(args)}/app`, name, function (err) {
-    if (err) {
-      console.error(err);
-      return;
-    }
+  log.log(`🦀  ${language.tsjs} it is!\n`);
 
-    log.success('✅  Template files copied\n');
-    process.chdir(name);
-    log.log('🦀  Initialising dependency management\n');
-    execa.shellSync('npm init -y');
+  const deps = await inquirer.prompt([
+    {
+      type: 'checkbox',
+      name: 'optionalDependencies',
+      message: '🦀  So what utilities are you going to need? React Router is included by default.',
+      choices: [
+        'Redux', 'React Query', 'TailwindCSS', 'React Bootstrap', 'Material UI', 'Font Awesome', 'Styled Components'
+      ],
+    },
+  ])
 
-    let dependencies = ['react', 'react-router-dom', 'babel-polyfill'];
+  log.log(`🦀  OK, got it. Creating new project in "${name}" directory.\n\n`);
 
-    if (args.redux) {
-      dependencies.push('redux', 'react-redux');
+  log.log('🦀 All of the output after the crabs is from Create React App, not from Crab\n');
+  log.log('🦀🦀🦀🦀🦀🦀🦀🦀🦀🦀🦀🦀🦀🦀🦀🦀🦀🦀🦀🦀\n');
 
-      if (args.typescript) {
-        dependencies.push('@types/react-redux');
-      }
-    }
+  const craCommand = `npx create-react-app ${name}${language.tsjs === 'TypeScript' ? ' --template=typescript' : ''}`;
+  let craRunning = true;
+  // setTimeout(() => {
+  //   if (craRunning) log.log('🦀  Create React App is still installing. It\'s a pretty long process, but there isn\'t a lot we can do about it.');
+  // }, 1000);
 
-    log.log('🦀  Installing code dependencies. This can take a while depending on whether NPM has cached them.');
-    execa.shellSync(`npm install --save ${dependencies.join(' ')}`);
-    log.success('✅  Dependencies installed\n');
-    log.log('🦀  Installing dev dependencies. This can take a bit a bit longer.');
-    execa.shellSync('npm install --save-dev node-sass');
-    log.success('✅  Dev dependencies installed\n');
+  // setTimeout(() => {
+  //   if (craRunning) log.log('🦀  Still installing. It\'s got a lot of stuff to do...');
+  // }, 3000);
 
-    if (args.git && utils.checkGit(args)) {
-      log.log('🦀  Initialising Git for version control');
-
-      execa.shellSync('git init');
-
-      fs.copyFile(`${__dirname}/templates/${utils.templateDirectory(args)}/gitignore.hbs`, `${process.cwd()}/.gitignore`, (error) => {
-        if (error) {
-          console.error(error);
-          return false;
-        }
-        log.success('✅  Git initialised\n');
-      });
-    }
-
-    if (args.redux) {
-      log.log('🦀  Setting up redux files');
-      ncp(`${__dirname}/templates/${utils.templateDirectory(args)}/redux`, `${process.cwd()}/redux`, (error) => {
-        if (error) {
-          console.error(error);
-        }
-        log.success('✅  Redux files added\n');
-      });
-    }
-
-    fs.readFile(`${__dirname}/templates/${utils.templateDirectory(args)}/app-index.${args.fileExtension}`, 'utf8', (error, data) => {
-      if (error) {
-        log.danger(`🛑  Could not read template file: ${__dirname}/templates/${utils.templateDirectory(args)}/app-index.${args.fileExtension}`);
-        return;
-      }
-
-      if (args.typescript || args.redux) {
-        try {
-          utils.createCrabFile(args);
-          log.success('✅  Saved created .crabfile');
-        } catch(error) {
-          log.warn('⚠️ Unable to create crabfile to save your project settings.');
-        }
-      }
-
-      let template = handlebars.compile(data);
-      let finishedTemplate = template(args);
-
-      const writeOptions = { encoding: 'utf8', flag: 'wx' };
-
-      fs.writeFile(`${process.cwd()}/index.${args.fileExtension}`, finishedTemplate, writeOptions, (error) => {
-        if(error === null) {
-          log.success(`✅  Saved index.${args.fileExtension} successfully. That's the last step.\n`);
-          console.log(`🙌  You now just need to run "cd ${name}" and then run "parcel index.html" and your app will be running at http://localhost:1234.\n`);
-
-          log.crab('(\\/)!_!(\\/)\n');
-
-        } else {
-          log.danger(`🛑  An error has occured at the final step, creating the index.${args.fileExtension} file`);
-        }
-      });
-    });
-
-  });
+  setTimeout(() => {
+    if (craRunning) log.log('🦀  Seriously this is a pretty long process. It\'s working, it\'s just long.');
+  }, 10000);
+  // const { stdout } = await execa.command(craCommand);
+  // console.log(stdout);
 
 
+  const subprocess = execa.command(craCommand);
+  subprocess.stdout.pipe(process.stdout);
+  await subprocess;
+
+  craRunning = false;
+
+  log.log('🦀🦀🦀🦀🦀🦀🦀🦀🦀🦀🦀🦀🦀🦀🦀🦀🦀🦀🦀🦀');
+  log.log('🦀 Create React App has finished its work. Crab is taking over and setting up your stuff.');
+
+  log.log(`🦀 Switching to ${name} directory to install software.`);
+  process.chdir(name);
+
+  await installers.installReactRouter();
+
+  console.log(deps.optionalDependencies);
+
+  if (deps.optionalDependencies.includes('React Query')) {
+    await installers.installReactQuery();
+  }
+  if (deps.optionalDependencies.includes('TailwindCSS')) {
+    await installers.installTailwind();
+  }
 }
 
 const install = (feature, cmd) => {
 
   let args = utils.cleanArgs(cmd);
-  const options = ['tailwind'];
+
+  const options = {
+    tailwind: installers.installTailwind,
+    'react-query': installers.installReactQuery
+  };
 
   if (args.list || feature === 'list') {
-    log.log(`🦀  Install options are: ${options.join(', ')}`);
+    log.log(`🦀  Install options are: ${Object.keys(options).join(', ')}`);
     return;
   }
 
-  if (!options.includes(feature)) {
+  if (!Object.keys(options).includes(feature)) {
     log.danger(`🛑  ${feature} is not an option`);
     log.log(`🦀  Install options are: ${options.join(', ')}`);
     return;
   }
 
   if (!utils.isCurrentRoot()) {
-    log.danger(`🛑  This does not appear to be the root directory.`);
+    log.danger(`🛑  You can only install in the application root directory.`);
     return;
   }
 
-  if (feature === 'tailwind') {
-    utils.installTailwind();
-  }
+  options[feature]();
 }
 
-module.exports = { crab, generate, create, destroy, install };
+module.exports = { crab, generate, create, install };
