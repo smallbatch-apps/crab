@@ -9,22 +9,21 @@ program
   .command('generate <type> [component-name]')
   .alias('g')
   .description('Generate a React resource - defaults to class-based component')
-  .option('-f, --functional', 'Create functional (not class) component')
-  .option('-r, --redux', 'Create component (class only) with Redux code')
-  .option('-t, --typescript', 'Create TypeScript component')
-  .option('--components <components>', 'Add imports for components as comma separated list')
-  .option('--path <path>', 'Url for links - Routes only')
-  .option('--menu', 'Insert into nav menu - Routes only')
-  .option('--content <content>', 'Populate with content')
-  .option('--imports <imports>', 'Add import statements')
+  .option('-c, --class', 'Create class component')
+  .option('-h, --hooks', 'Import and use hooks (useEffect, useQuery)')
+  .option('-p, --props', 'Set props to use, can type with typescript: name:string,age:number')
+  .option('-s, --state', 'Set the application state')
+  .option('--path <path>', 'Url for links - Pages only')
   .action(commands.generate);
 
-program.command('create <project-name>')
+program.command('create [project-name]')
   .alias('new')
   .description('Make a new project in the <project-name> directory')
-  .option('-r,--redux', 'Include redux boilerplate and structure')
+  .option('-j, --javascript', 'Create project as JavaScript')
   .option('-t, --typescript', 'Create project as TypeScript')
-  .option('--no-git', 'Do not include git files and init process')
+  .option('-r, --react', 'Create React project, not NextJS')
+  .option('-n, --next', 'Create NextJS project instead of standard React')
+  .option('--no-utils', 'Do not include any optional libraries')
   .action(commands.create);
 
 program.command('crab')
@@ -34,8 +33,5 @@ program.command('crab')
 program.command('install [feature]')
   .option('-l, --list', 'List the available features you can install')
   .action(commands.install);
-
-program.command('destroy <file>')
-  .action(commands.destroy);
 
 program.parse(process.argv);

@@ -1,4 +1,4 @@
-import { Switch, Route, Link } from 'react-router-dom'
+import { Routes, Route, Link } from 'react-router-dom'
 import logo from './logo.svg';
 import './App.css';
 import Homepage from './components/pages/Homepage';
@@ -27,14 +27,10 @@ const App = () => {
         <li><Link to="/about" className="p-3">About Crab</Link></li>
       </ul>
 
-      <Switch>
-        <Route path="/about">
-          <About />
-        </Route>
-        <Route path="/" exact>
-          <Homepage />
-        </Route>
-      </Switch>
+      <Routes>
+        <Route path="/about" element={<About />} />
+        <Route path="/" element={<Homepage />} />
+      </Routes>
     </div>
   );
 }

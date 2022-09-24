@@ -1,5 +1,6 @@
 testbed/
 node_modules/
+samples/
 .vscode/
 .idea/
 .env

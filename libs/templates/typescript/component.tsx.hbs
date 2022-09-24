@@ -1,0 +1,26 @@
+import { FC{{#if importReact}}, {{reactRouterHooks}}{{/if}} } from 'react';
+{{#if importReactRouter}}import { {{reactRouterHooks}} } from 'react-router-dom';{{/reactRouter}}
+{{#if importReactQuery}}import { {{reactQueryHooks}} } from 'react-query';{{/reactQuery}}
+{{#if importRedux}}import { {{reduxHooks}} } from 'react-redux';{{/reactQuery}}
+
+{{#if props}}type Props = {
+  {{#each props}}{{{this.name}}}: {{{this.type}}}
+};
+{{/if}}
+
+const {{resourceName}}: FC{{#if props}}<Props>{{/if}} = ({{#if props}} { {{#each props}}{{{this.name}}}{{/each}} } {{/if}}) => {
+  {{#if useState}}
+  const [count, setCount] = useState(0);
+  {{/if}}
+  
+  {{#if useQuery}}const { data } = useQuery('get{{resourceName}}Data', () => {}, {keepPreviousData: true}){{/reactQuery}}
+  {{#if useEffect}}useEffect(() => {});{{/useEffect}}
+  {{#if useSelector}}const name = useSelector((state) => state.name);{{/useSelector}}
+  {{#if useReducer}}const [state, dispatch] = useReducer(reducer, '');{{/useReducer}}
+  
+  return (<>
+    {/* Content goes here */}
+  </>);
+}
+
+export default {{resourceName}};

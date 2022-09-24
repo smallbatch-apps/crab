@@ -6,6 +6,7 @@ const execa = require('execa');
 const chalk = require('chalk');
 const errors = require('./errors');
 const log = require('./log');
+const path = require('path');
 const ncp = require('ncp').ncp;
 const installers = require('./installers');
 
@@ -27,6 +28,60 @@ const generate = async (type, name, cmd) => {
       return;
     }
 
+    if(args.state){
+      if(!args.hooks) args.hooks = [];
+      args.hooks.push('useState');
+    } 
+
+    const props = utils.parseProps(args.props);
+    const propsString = props.map(({name}) => name).join(', ');
+    const state = utils.parseState(args.state);
+
+    const values = {
+      importReactRouter: false,
+      importReactQuery: false,
+      importRedux: false,
+      importReact: false,
+      reactRouterHooks: false,
+      reactQueryHooks: false,
+      reduxHooks: false,
+      reactHooks: false,
+      useQuery: args.hooks.includes('useQuery'), 
+      useEffect: args.hooks.includes('useEffect'), 
+      useSelect: args.hooks.includes('useSelector'), 
+      useState: args.hooks.includes('useState'), 
+      props,
+      state,
+      propsString
+    }
+  
+    if(args.hooks) {
+      const allHooksGrouped = args.hooks.split(',').reduce((all, hook)=> {
+        const hookLib = utils.hooksLookup[hook];
+        if(!hookLib) return all;
+        if(!all[hookLib]) all[hookLib] = [];
+        all[hookLib].push(hook);
+        return all;
+      }, {});
+
+      if(allHooksGrouped['React']) {
+        values.importReact = true;
+        values.reactHooks = allHooksGrouped['React'].join(', ');
+      }
+      if(allHooksGrouped['ReactRouter']) {
+        values.importReactRouter = true;
+        values.reactRouterHooks = allHooksGrouped['ReactRouter'].join(', ');
+      }
+      if(allHooksGrouped['ReactQuery']) {
+        values.importReactQuery = true;
+        values.reactQueryHooks = allHooksGrouped['ReactQuery'].join(', ');
+      }
+      if(allHooksGrouped['Redux']) {
+        values.importRedux = true;
+        values.reduxHooks = allHooksGrouped['Redux'].join(', ');
+      } 
+    }
+
     let template = handlebars.compile(data);
     let filePath = utils.resolveGeneratedFilePath(args);
 
@@ -36,8 +91,8 @@ const generate = async (type, name, cmd) => {
       args.content = utils.createRouteDefaultContent(args);
     }
 
-
-    let finishedTemplate = template(args);
+    let finishedTemplate = utils.formatContent(template({...values, ...args}));
+    
     fs.writeFile(filePath, finishedTemplate, { encoding: 'utf8', flag: 'wx' }, (error) => {
       if (error === null) {
         log.success(`✅  Your ${args.type} ${args.resourceName} successfully created`);
@@ -61,79 +116,139 @@ const create = async function (name, cmd) {
   log.log(`🦀  We have to ask you some questions first.\n`);
 
   const args = utils.cleanArgs(cmd);
-
-  if (fs.existsSync(`${process.cwd()}/${name}`)) {
+  
+  if (name && fs.existsSync(`${process.cwd()}/${name}`)) {
     log.danger(`🛑  Directory "${name}" already exists. You cannot create a project there.\n`);
     return;
   }
 
-  const language = await inquirer
+  if(!name) {
+    const namer = await inquirer.prompt({
+      type: "input",
+      name: "namer",
+      message: "Please specify the name/directory, eg: my-app"
+    });
+    name = namer.namer;
+    log.log(`🦀  Installing to ./${name} directory\n`);
+  }
+
+  if(!args.next && !args.react){
+    const creator = await inquirer
+      .prompt([
+        {
+          type: 'list',
+          name: 'rnext',
+          message: 'Standard React app, or NextJS',
+          choices: ['React', 'NextJS'],
+        },
+      ]);
+
+    if(creator.rnext === 'NextJS') {
+      args.next = true;
+    }
+  }
+
+
+  const cmdcmd = args.next ? 'create-next-app' : 'create-react-app';
+  const cmdName = args.next ? 'Create Next App': 'Create React App';
+
+  log.log(`🦀  Scaffolding with ${cmdName}\n`);
+
+  if(!args.typescript && !args.javascript){
+    const language = await inquirer
     .prompt([
       {
         type: 'list',
         name: 'tsjs',
-        message: 'TypeScript or JavaScript?',
-        choices: ['TypeScript', 'JavaScript'],
+        message: 'JavaScript or TypeScript?',
+        choices: ['JavaScript', 'TypeScript'],
       },
     ]);
+    log.log(`🦀  ${language.tsjs} it is!\n`);
 
-  log.log(`🦀  ${language.tsjs} it is!\n`);
+    if(language.tsjs === "TypeScript") {
+      args.typescript = true;
+    } 
+  }
+  let deps = {optionalDependencies:[]};
 
-  const deps = await inquirer.prompt([
-    {
-      type: 'checkbox',
-      name: 'optionalDependencies',
-      message: '🦀  So what utilities are you going to need? React Router is included by default.',
-      choices: [
-        'Redux', 'React Query', 'TailwindCSS', 'React Bootstrap', 'Material UI', 'Font Awesome', 'Styled Components'
-      ],
-    },
-  ])
+  if(args.utils) {
+    deps = await inquirer.prompt([
+      {
+        type: 'checkbox',
+        name: 'optionalDependencies',
+        message: '🦀  So what utilities are you going to need? React Router is included by default.',
+        choices: [
+          'Redux', 'React Query', 'TailwindCSS', 'React Bootstrap', 'Material UI', 'Font Awesome', 'Styled Components'
+        ],
+      },
+    ])
+  } 
 
-  log.log(`🦀  OK, got it. Creating new project in "${name}" directory.\n\n`);
+  log.log(`🦀  OK, got it. Creating new project in "${name}" directory.\n`);
 
-  log.log('🦀 All of the output after the crabs is from Create React App, not from Crab\n');
+  log.log(`🦀 All of the output after the army of crabs is from ${cmdName}, not from Crab\n`);
   log.log('🦀🦀🦀🦀🦀🦀🦀🦀🦀🦀🦀🦀🦀🦀🦀🦀🦀🦀🦀🦀\n');
 
-  const craCommand = `npx create-react-app ${name}${language.tsjs === 'TypeScript' ? ' --template=typescript' : ''}`;
+
+
+  let cmdFlags = '';
+  if(args.next) {
+    cmdFlags = args.typescript ? ' --template=typescript' : '';
+  } else {
+    if(deps.optionalDependencies.includes('Redux')){
+      cmdFlags = args.typescript ? ' --template redux-typescrip' : '--template redux';
+    }
+  }
+
+  const craCommand = `npx ${cmdcmd} ${name}${cmdFlags}`;
+
   let craRunning = true;
-  // setTimeout(() => {
-  //   if (craRunning) log.log('🦀  Create React App is still installing. It\'s a pretty long process, but there isn\'t a lot we can do about it.');
-  // }, 1000);
+  const mockCreation = true;
 
-  // setTimeout(() => {
-  //   if (craRunning) log.log('🦀  Still installing. It\'s got a lot of stuff to do...');
-  // }, 3000);
+  if (!mockCreation) {
+    setTimeout(() => {
+      if (craRunning) log.log('🦀  Seriously this is a pretty long process. It\'s working, it\'s just long.');
+    }, 10000);
+    
+    const subprocess = execa.command(craCommand);
+    subprocess.stdout.pipe(process.stdout);
+    await subprocess;
+  } else {
+    // To use this feature you MUST create a /samples directory containing 
+    // all combinations of default npx installed apps
+    const copyDir = path.join(__dirname, '..', 'samples', `${cmdcmd}_${args.typescript ? "typescript" : "javascript"}`);
 
-  setTimeout(() => {
-    if (craRunning) log.log('🦀  Seriously this is a pretty long process. It\'s working, it\'s just long.');
-  }, 10000);
-  // const { stdout } = await execa.command(craCommand);
-  // console.log(stdout);
-
-
-  const subprocess = execa.command(craCommand);
-  subprocess.stdout.pipe(process.stdout);
-  await subprocess;
-
+    await ncp(copyDir, name, (error) => {
+      if(error) console.log(error)
+    });
+    
+    log.log('🦀  Copying pre-stored templates to new directory. This should only take about 10 seconds');
+    await new Promise(r => setTimeout(r, 10000));
+  }
+  
   craRunning = false;
-
+  
   log.log('🦀🦀🦀🦀🦀🦀🦀🦀🦀🦀🦀🦀🦀🦀🦀🦀🦀🦀🦀🦀');
-  log.log('🦀 Create React App has finished its work. Crab is taking over and setting up your stuff.');
+  log.log(`🦀 ${cmdName} has finished its work. Crab is taking over and setting up your stuff.`);
 
   log.log(`🦀 Switching to ${name} directory to install software.`);
   process.chdir(name);
-
-  await installers.installReactRouter();
-
-  console.log(deps.optionalDependencies);
-
-  if (deps.optionalDependencies.includes('React Query')) {
-    await installers.installReactQuery();
+  
+  if(!args.next) {
+    await installers.installReactRouter();
   }
-  if (deps.optionalDependencies.includes('TailwindCSS')) {
-    await installers.installTailwind();
+
+  if(args.utils) {
+    if (deps.optionalDependencies.includes('React Query')) {
+      await installers.installReactQuery();
+    }
+    if (deps.optionalDependencies.includes('TailwindCSS')) {
+      await installers.installTailwind();
+    }
   }
+
+  log.success(`🦀 Crab has finished setting up. Switch to the ${name} directory to begin work.`);
 }
 
 const install = (feature, cmd) => {

@@ -1,16 +1,23 @@
 // const log = require('./log');
 // const ncp = require('ncp').ncp;
 const { EOL } = require('os');
-const execa = require('execa');
 const fs = require('fs');
 const path = require('path');
+const prettier = require('prettier');
 
 const FILE_CRACO = 'craco.config.js';
 const FILE_PKG = 'package.json';
 const FILE_TS = 'tsconfig.json';
 
-const formatFile = async path => {
-  await execa.command(`npx prettier --write ${path}`);
+const formatFile = async (file, parser = 'javascript') => {
+  const fullPath = path.join(rootDirectory(), file);
+  const contents = fs.readFileSync(fullPath);
+  const formatted = prettier.format(contents, { parser });
+  fs.writeFileSync(fullPath, formatted);
+}
+
+const formatContent = async (contents, parser = 'javascript') => {
+  return prettier.format(contents, { parser });
 }
 
 const createImportString = (imported, from = false) => {
@@ -21,7 +28,7 @@ const createImportString = (imported, from = false) => {
   return importString;
 }
 
-const isTypescript = () => fs.existsSync(`${rootDirectory()} tsconfig.json`);
+const isTypescript = () => fs.existsSync(path.join(rootDirectory(), 'tsconfig.json'));
 
 const findFinalImportLine = array => {
   let importEnds = 0;
@@ -55,7 +62,7 @@ const loadCracoConfig = () => {
 const setJsonFile = (json, file) => {
   const fileName = path.join(rootDirectory(), file);
   fs.writeFileSync(fileName, JSON.stringify(json));
-  formatFile(fileName);
+  formatFile(fileName, 'json');
 }
 
 const setTsCompilerOptions = options => {
@@ -110,8 +117,9 @@ const safePathRelative = (from, to) => path.relative(from, to);
 
 const templateDirectory = args => args.typescript ? 'typescript' : 'javascript';
 
-const cleanArgs = (cmd) => {
+const cleanArgs = cmd => {
   let args = {};
+
   if (cmd._name !== 'create') {
     args = {
       rootDirectory: rootDirectory()
@@ -132,6 +140,9 @@ const cleanArgs = (cmd) => {
 
   args.fileExtension = args.typescript ? 'tsx' : 'js';
   args.command = cmd._name;
+
+  if(args.javascript) args.typescript = false;
+  if(args.react) args.next = false;
 
   if (args.command === 'generate') {
     args.type = cmd.parent.args[0];
@@ -174,11 +185,8 @@ const cleanArgs = (cmd) => {
     args.isRoute = args.type === 'route';
 
   }
-
   return args
 }
-
-
 
 const isRootAtPath = path => fs.existsSync(`${path}package.json`);
 
@@ -198,8 +206,40 @@ const rootDirectory = () => {
   return false;
 }
 
+const hooksLookup = {
+  useState: 'React',
+  useEffect: 'React',
+  useMemo: 'React',
+  useContext: 'React',
+  useReducer: 'React',
+  useNavigate: 'ReactRouter',
+  useParams: 'ReactRouter',
+  useQuery: 'ReactQuery',
+  useMutation:'ReactQuery',
+  useQueryClient: 'ReactQuery',
+  useCache: 'ReactQuery',
+  useSelector: 'Redux',
+  useDispatch: 'Redux',
+  useStore: 'Redux'
+}
+
+const parseProps = props => {
+  return props.split(',').map(prop => {
+    const { name, type = 'string' } = prop.split(':');
+    return { name, type };
+  })
+}
+
+const parseState = state => {
+  return state.split(',').map(key => {
+    const { name, type = 'string' } = key.split(':');
+    return { name, type };
+  })
+}
+
+
 const pageDirectory = () => path.normalize(path.join(rootDirectory(), 'src/components/pages'));
 
 const isCurrentRoot = () => isRootAtPath(`${process.cwd()}/`);
 
-module.exports = { loadJsonFile, cracoAddPlugins, loadCracoConfig, setJsonFile, setCracoConfig, setTsCompilerOptions, formatFile, createImportString, isTypescript, findFinalImportLine, insertImport, cleanArgs, resolveTemplateFile, templateDirectory, rootDirectory, pageDirectory, resolveGeneratedFilePath, getPathToComponents, isCurrentRoot, FILE_CRACO, FILE_PKG, FILE_TS };
+module.exports = { loadJsonFile, cracoAddPlugins, loadCracoConfig, setJsonFile, setCracoConfig, setTsCompilerOptions, formatFile, formatContent, createImportString, isTypescript, findFinalImportLine, insertImport, cleanArgs, resolveTemplateFile, templateDirectory, rootDirectory, pageDirectory, resolveGeneratedFilePath, getPathToComponents, isCurrentRoot, hooksLookup, parseProps, parseState, FILE_CRACO, FILE_PKG, FILE_TS };
