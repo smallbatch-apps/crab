@@ -1,0 +1,40 @@
+{{#if env}}
+{{{env}}}
+{{/if}}
+{{#if importReact}}import React from 'react';{{/if}}
+{{#if imports.length}}
+{{#each imports}}
+{{{this}}};
+{{/each}}{{/if}}
+{{#unless javascript}}
+{{#if props.length}}
+{{{propsDefinition resourceName this}}}
+{{#each props}}
+  {{#unless (isPropSpread name)}}{{name}}: {{type}};{{/unless}}
+{{/each}}
+}
+
+{{/if}}
+{{/unless}}
+{{#if inlineExport}}export {{#unless exportNamed}}default {{/unless}} {{/if}}{{#unless inlineDefaultArrow}}{{#if arrowFunction}}const {{else}}function {{/if}}{{resourceName}}{{#if reactFC}}: React.FC{{#if props.length}}<{{resourceName}}Props>{{/if}}{{/if}}{{/unless}}{{#if arrowFunction}}{{#unless inlineDefaultArrow}} = {{/unless}}{{/if}}(
+  {{{getPropArgs props}}}
+  {{propType resourceName this}}
+){{#unless javascript}}{{#if returnType}}: JSX.Element {{/if}}{{/unless}}{{#if arrowFunction}} => {{/if}}{
+
+  {{#each state}}
+  const [{{name}}, {{setter}}] = useState{{#if type}}<{{type}}>{{/if}}({{{getDefaultState type initialValue}}});
+  {{/each}}
+
+  return (<{{#if extends}}{{extends}}{{else}}div{{/if}}{{#if css}} className={styles.{{cssRoot cssModuleRoot}} } {{/if}} {{#if (hasPropSpread this)}} {...props} {{/if}}{{#if (isSelfClosing extends)}}/{{/if}}>
+  {{#unless (isSelfClosing extends)}}
+    {{#if hasChildren}}
+      {children}
+    {{/if}}
+  </{{#if extends}}{{extends}}{{else}}div{{/if}}>);
+  {{else}})
+  {{/unless}}
+}
+{{#unless inlineExport}}
+
+export {{#unless exportNamed}}default {{/unless}}{{resourceName}};
+{{/unless}}

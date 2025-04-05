@@ -1,0 +1,28 @@
+import { render{{#if hasChildren}}, screen{{/if}} } from '@testing-library/react';
+import {{importStatement resourceName exportNamed}} from './{{resourceName}}';
+
+describe('{{resourceName}}', () => {
+  {{#if props.length}}
+  const defaultProps = {
+    {{#each props}}
+    {{#unless (isChildren name)}}{{name}}: {{{defaultValue}}},{{/unless}}
+    {{/each}}
+  };
+  {{/if}}
+
+  it('renders without crashing', () => {
+    render(<{{resourceName}}{{#if props.length}} {...defaultProps}{{/if}} />);
+  });
+
+  {{#if hasChildren}}
+  it('renders children when passed', () => {
+    render(
+      <{{resourceName}}{{#if props.length}} {...defaultProps}{{/if}}>
+        Child Content
+      </{{resourceName}}>
+    );
+    
+    expect(screen.getByText('Child Content')).toBeInTheDocument();
+  });
+  {{/if}}
+});

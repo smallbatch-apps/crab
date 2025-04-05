@@ -1,0 +1,24 @@
+{{#unless javascript}}import type { Meta, StoryObj } from '@storybook/react';{{/unless}}
+import {{importStatement resourceName exportNamed}} from './{{resourceName}}';
+
+const meta{{#unless javascript}}: Meta<typeof {{resourceName}}>{{/unless}} = {
+  component: {{resourceName}},
+  title: 'Components/{{resourceName}}',
+};
+
+export default meta;
+{{#unless javascript}}type Story = StoryObj<typeof {{resourceName}}>;{{/unless}}
+
+export const Default{{#unless javascript}}: Story{{/unless}} = {
+  args: {
+    {{#each props}}
+    {{#unless (isPropSpread name)}}
+    {{name}}: {{{getStoryDefault type defaultValue}}},
+    {{/unless}}
+    {{/each}}
+  },
+};
+
+export const Empty{{#unless javascript}}: Story{{/unless}} = {
+  args: {},
+};
