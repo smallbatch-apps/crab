@@ -1,9 +1,9 @@
 {{#unless javascript}}import type { Meta, StoryObj } from '@storybook/react';{{/unless}}
-import {{importStatement resourceName exportNamed}} from './{{resourceName}}';
+import {{importStatement resourceName exportNamed}} from './{{filename}}';
 
 const meta{{#unless javascript}}: Meta<typeof {{resourceName}}>{{/unless}} = {
   component: {{resourceName}},
-  title: 'Components/{{resourceName}}',
+  title: {{{storybookTitle this}}},
 };
 
 export default meta;

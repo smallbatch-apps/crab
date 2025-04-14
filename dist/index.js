@@ -11,15 +11,16 @@ program
     .description("Output an emoji crab")
     .option("--ascii", "Make an ascii crab")
     .action((options) => {
-    console.log(chalk.red(options.ascii ? "(\\/)!_!(\\/)" : "🦀"));
+    console.log(chalk.red.bold(options.ascii ? "(\\/)¡_¡(\\/)" : "🦀"));
 });
 program
     .command("generate")
     .alias("g")
     .description("Generate React resources such as components and other elements")
-    .argument("<type>", "Type of resource to generate (component, storybook, test)")
-    .argument("<name>", "Name of the resource")
+    .argument("[type]", "Name or type of resource")
+    .argument("[name]", "Name (if type specified)")
     .option("--test", "Include test file")
+    .option("--forwardRef", "Include test file")
     .option("--storybook", "Include Storybook story")
     .option("--css", "Include CSS module")
     .option("-p, --props <props>", "Comma separated list of props - name:type,name:type,name")
@@ -27,7 +28,16 @@ program
     .option("-e, --env <environment>", "React environment directive (client/server)")
     .option("-x, --extends <extends>", "HTML element to extend")
     .option("--js, --javascript", "Use JavaScript instead of TypeScript")
-    .action(generate);
+    .action((resource, name, options) => {
+    if (!name) {
+        // Single argument - treat as component name
+        generate("component", resource, options);
+    }
+    else {
+        // Two arguments - normal type + name
+        generate(resource, name, options);
+    }
+});
 program
     .command("init")
     .description("Create a new crab config file")

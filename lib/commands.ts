@@ -6,43 +6,63 @@ import {
   getElementType,
   findProjectRoot,
   isTypescriptProject,
+  findComponentRoot,
+  resolvePaths,
+  toKebabCase,
+  hasDependency,
   type PropState,
 } from "./utils.js";
 import handlebars from "handlebars";
 import { existsSync, readFileSync, writeFileSync, mkdirSync } from "fs";
 import { fileURLToPath } from "url";
 import { dirname, basename, join, format, relative, resolve } from "path";
+import chalk from "chalk";
 import registerHelpers from "./helpers.js";
 
 registerHelpers();
-
-type ComponentPath = {
-  path: string;
-  name: string;
-};
 
 type TemplateOptions = Record<string, any>;
 
 export const generate = async (
   type: string,
   name: string,
-  templateOptions: TemplateOptions
+  options: TemplateOptions
 ) => {
-  console.log("templateOptions", templateOptions);
   const { name: resourceName, path } = parseComponentPath(name);
+
+  const templateOptions = {
+    ...loadCrabConfig(),
+    ...options,
+  } as TemplateOptions;
+
   templateOptions.resourceName = resourceName;
   templateOptions.path = path;
+  templateOptions.cwd = process.cwd();
 
-  templateOptions.componentDir = resolveComponentDirectory({
-    name: resourceName,
-    path: templateOptions.path,
-  });
+  templateOptions.filename = templateOptions.lowercaseFilename
+    ? toKebabCase(resourceName)
+    : resourceName;
+
+  if (!templateOptions.componentDir) {
+    templateOptions.componentDir = findComponentRoot();
+  }
+
+  templateOptions.finalPath = resolvePaths(templateOptions);
+
+  templateOptions.rootDir = findProjectRoot();
 
   templateOptions.resourceName = basename(name);
   templateOptions.path = dirname(name);
 
   if (!templateOptions.props && templateOptions.extends) {
     templateOptions.props = "...props";
+  }
+
+  if (templateOptions.forwardRef) {
+    templateOptions.inlineExport = false;
+    templateOptions.reactFC = false;
+    templateOptions.arrowFunction = false;
+    templateOptions.importReact = true;
   }
 
   templateOptions.props = generatePropStateArray(templateOptions.props);
@@ -62,15 +82,11 @@ export const generate = async (
   }
 };
 
-export const generateComponent = async (options: TemplateOptions) => {
-  const templateOptions = {
-    ...loadCrabConfig(),
-    ...options,
-  } as TemplateOptions;
-
+export const generateComponent = async (templateOptions: TemplateOptions) => {
   templateOptions.imports = [];
-
-  templateOptions.env = options.env ? `"use ${options.env}";` : false;
+  templateOptions.env = templateOptions.env
+    ? `"use ${templateOptions.env}";`
+    : false;
 
   if (
     templateOptions.arrowFunction &&
@@ -117,7 +133,6 @@ export const generateComponent = async (options: TemplateOptions) => {
   const templatePath = getTemplatePath("component");
   const templateContent = readFileSync(templatePath, "utf8");
   const template = handlebars.compile(templateContent);
-  console.log("templateOptions before build", templateOptions);
   const finishedTemplate = await prettify(template(templateOptions));
   const filename = buildComponentPath(templateOptions);
 
@@ -127,6 +142,10 @@ export const generateComponent = async (options: TemplateOptions) => {
   }
   mkdirSync(dirname(filename), { recursive: true });
   writeFileSync(filename, finishedTemplate);
+
+  console.log(
+    chalk.green(`🦀 ${templateOptions.resourceName} component generated`)
+  );
 
   if (templateOptions.storybook) {
     generateStorybook(templateOptions);
@@ -141,18 +160,16 @@ export const generateComponent = async (options: TemplateOptions) => {
   }
 };
 
-export const generateStorybook = async (options: TemplateOptions) => {
-  const templateOptions = {
-    ...loadCrabConfig(),
-    ...options,
-  } as TemplateOptions;
-
-  templateOptions.props = generatePropStateArray(options.props);
-
+export const generateStorybook = async (templateOptions: TemplateOptions) => {
   const filename = buildStorybookPath(templateOptions);
 
   if (existsSync(filename)) {
-    console.log("File already exists: ", filename);
+    console.log(chalk.red(`🦀 File ${filename} already exists`));
+    return;
+  }
+
+  if (!hasDependency("@storybook/react")) {
+    console.log(chalk.red("🦀 Storybook not installed"));
     return;
   }
 
@@ -164,17 +181,16 @@ export const generateStorybook = async (options: TemplateOptions) => {
 
   mkdirSync(dirname(filename), { recursive: true });
   writeFileSync(filename, finishedTemplate);
+
+  console.log(
+    chalk.green(`🦀 ${templateOptions.resourceName} storybook generated`)
+  );
 };
 
-export const generateTest = async (options: TemplateOptions) => {
-  const templateOptions = {
-    ...loadCrabConfig(),
-    ...options,
-  } as TemplateOptions;
-
+export const generateTest = async (templateOptions: TemplateOptions) => {
   const testFramework = getTestFramework();
   if (!testFramework) {
-    console.log("No test framework found");
+    console.log(chalk.red("🦀 No test framework found"));
     return;
   }
   const templatePath = getTemplatePath(`test-${testFramework}`);
@@ -186,12 +202,14 @@ export const generateTest = async (options: TemplateOptions) => {
   const filename = buildTestPath(templateOptions);
 
   if (existsSync(filename)) {
-    console.log("File already exists: ", filename);
+    console.log(chalk.red(`🦀 File ${filename} already exists`));
     return;
   }
 
   mkdirSync(dirname(filename), { recursive: true });
   writeFileSync(filename, finishedTemplate);
+
+  console.log(chalk.green(`🦀 ${templateOptions.resourceName} test generated`));
 };
 
 const generateCssModule = async (templateOptions: TemplateOptions) => {
@@ -209,6 +227,10 @@ const generateCssModule = async (templateOptions: TemplateOptions) => {
 
   mkdirSync(dirname(filename), { recursive: true });
   writeFileSync(filename, finishedTemplate);
+
+  console.log(
+    chalk.green(`🦀 ${templateOptions.resourceName} css module generated`)
+  );
 };
 
 const getPropName = (templateOptions: Record<string, any>): string => {
@@ -232,29 +254,9 @@ function parseComponentPath(fullPath: string) {
   return { name, path };
 }
 
-function checkPathOverlap(cwd: string, splitPath: ComponentPath) {
-  // Get the path segments after 'components/'
-  const cwdSegments = cwd.split("/components/")[1]?.split("/") || [];
-  const { name, path } = splitPath;
-  const pathSegments = path.split("/");
-
-  // Look for overlapping segments
-  const overlap = pathSegments.some((segment) => cwdSegments.includes(segment));
-
-  if (overlap) {
-    throw new Error(
-      `Warning: Path '${path}' overlaps with current directory structure.\n` +
-        `You are in: ${cwdSegments.join("/")}\n` +
-        `Consider:\n` +
-        `- 'crab g component ${name}' to create in current directory\n` +
-        `- Use a full path from components root for a different location`
-    );
-  }
-}
-
 function buildComponentPath(templateOptions: TemplateOptions) {
-  const path = templateOptions.componentDir.path;
-  const name = templateOptions.componentDir.name;
+  const path = templateOptions.finalPath;
+  const name = templateOptions.filename;
   return format({
     dir: relative(process.cwd(), path),
     name,
@@ -263,8 +265,8 @@ function buildComponentPath(templateOptions: TemplateOptions) {
 }
 
 function buildTestPath(templateOptions: TemplateOptions) {
-  const path = templateOptions.componentDir.path;
-  const name = templateOptions.componentDir.name + ".test";
+  const path = templateOptions.finalPath;
+  const name = templateOptions.filename + ".test";
   return format({
     dir: relative(process.cwd(), path),
     name,
@@ -273,8 +275,8 @@ function buildTestPath(templateOptions: TemplateOptions) {
 }
 
 function buildStorybookPath(templateOptions: TemplateOptions) {
-  const path = templateOptions.componentDir.path;
-  const name = templateOptions.componentDir.name + ".stories";
+  const path = templateOptions.finalPath;
+  const name = templateOptions.filename + ".stories";
   return format({
     dir: relative(process.cwd(), path),
     name,
@@ -283,8 +285,8 @@ function buildStorybookPath(templateOptions: TemplateOptions) {
 }
 
 function buildCssModulePath(templateOptions: TemplateOptions) {
-  const path = templateOptions.componentDir.path;
-  const name = templateOptions.componentDir.name + ".module";
+  const path = templateOptions.finalPath;
+  const name = templateOptions.filename + ".module";
   return format({
     dir: relative(process.cwd(), path),
     name,
@@ -292,73 +294,16 @@ function buildCssModulePath(templateOptions: TemplateOptions) {
   });
 }
 
-function resolveComponentDirectory(
-  componentPath: ComponentPath,
-  configComponentDir?: string
-) {
-  const { name, path } = componentPath;
-  const cwd = process.cwd();
-
-  // 1. Use configured directory if provided
-  if (configComponentDir) {
-    return {
-      path: join(configComponentDir, path),
-      name,
-    };
-  }
-
-  console.log("cwd:", cwd);
-
-  // 2. Use current directory if in components/
-  if (cwd.includes("/components")) {
-    // Check for path overlap to prevent confusing nesting
-    checkPathOverlap(cwd, { name, path });
-
-    // If no path, use current directory
-    if (path === "." || path === "") {
-      return {
-        path: cwd,
-        name,
-      };
-    }
-
-    // With path, use absolute from components root
-    const componentsRoot = cwd.split("/components")[0] + "/components";
-    return {
-      path: join(componentsRoot, path),
-      name,
-    };
-  }
-
-  // 3. Look for components directory
-  const possibleRoots = [join(cwd, "src/components"), join(cwd, "components")];
-
-  for (const root of possibleRoots) {
-    if (existsSync(root)) {
-      return {
-        path: join(root, path),
-        name,
-      };
-    }
-  }
-
-  throw new Error(
-    "Could not find components directory. " +
-      "Please specify a componentDir in crab.json or " +
-      "run this command from within a components directory"
-  );
-}
-
 export const init = async () => {
   const templatePath = getTemplatePath("crabrc");
   const templateContent = readFileSync(templatePath, "utf8");
   const template = handlebars.compile(templateContent);
   const projectRoot = findProjectRoot() ?? ".";
-  console.log("projectRoot:", projectRoot);
   if (resolve(projectRoot) !== resolve(process.cwd())) {
     console.log("Directory is not project root");
     return;
   }
-  // const finishedTemplate = template(templateOptions))
+
   writeFileSync(join(projectRoot, "crab.json"), template({}));
+  console.log(chalk.green("🦀 Crab config initialized"));
 };

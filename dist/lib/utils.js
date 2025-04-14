@@ -20,6 +20,20 @@ export const findProjectRoot = (startDir = process.cwd()) => {
         currentDir = parentDir;
     }
 };
+export function findComponentRoot() {
+    const projectRoot = findProjectRoot();
+    if (!projectRoot)
+        return null;
+    const possibleRoots = [
+        join(projectRoot, "src/components"),
+        join(projectRoot, "components"),
+    ];
+    for (const root of possibleRoots) {
+        if (existsSync(root))
+            return root;
+    }
+    return null;
+}
 export const isTypescriptProject = () => {
     const projectRoot = findProjectRoot();
     if (!projectRoot)
@@ -61,6 +75,14 @@ export const getStoreImplementation = () => {
         return "jotai";
     return null;
 };
+export const getValidationLibrary = () => {
+    const deps = getDependencies();
+    if (hasDependency("zod", deps))
+        return "zod";
+    if (hasDependency("yup", deps))
+        return "yup";
+    return null;
+};
 export const hasRouter = () => {
     const deps = getDependencies();
     if (hasDependency("react-router-dom", deps))
@@ -75,18 +97,23 @@ export const getFormLibrary = () => {
         return "react-hook-form";
     if (hasDependency("formik", deps))
         return "formik";
+    if (hasDependency("@tanstack/react-form", deps))
+        return "tanstack-form";
     return null;
 };
 export const generatePropStateArray = (optionsValue) => {
     if (!optionsValue)
         return [];
-    return optionsValue.split(",").map((state) => {
+    return optionsValue
+        .split(",")
+        .map((state) => {
         let [name, type, defaultValue] = state.split(":");
         if (!type)
             type = name === "children" ? "React.ReactNode" : "string";
         const setter = `set${name.charAt(0).toUpperCase() + name.slice(1)}`;
         return { name, type, setter, defaultValue };
-    });
+    })
+        .filter((prop) => prop.name !== "");
 };
 export const loadCrabConfig = () => {
     const root = findProjectRoot();
@@ -143,4 +170,22 @@ export const generatePropArgs = (props) => {
     if (!props.length)
         return "";
     return props.map((prop) => prop.name.trim()).join(", ");
+};
+export const resolvePaths = (templateOptions) => {
+    const cwd = process.cwd();
+    const rootDir = findProjectRoot() ?? "";
+    const { componentDir, path } = templateOptions;
+    const compFullPath = join(rootDir, componentDir);
+    const isInComponentDir = cwd.startsWith(compFullPath);
+    const finalPath = isInComponentDir
+        ? join(cwd, path)
+        : join(compFullPath, path);
+    console.log("Final path", finalPath);
+    return finalPath;
+};
+export const toKebabCase = (name) => {
+    return name
+        .replace(/([A-Z])/g, "-$1")
+        .toLowerCase()
+        .replace(/^-/, "");
 };

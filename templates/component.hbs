@@ -16,24 +16,30 @@
 
 {{/if}}
 {{/unless}}
-{{#if inlineExport}}export {{#unless exportNamed}}default {{/unless}} {{/if}}{{#unless inlineDefaultArrow}}{{#if arrowFunction}}const {{else}}function {{/if}}{{resourceName}}{{#if reactFC}}: React.FC{{#if props.length}}<{{resourceName}}Props>{{/if}}{{/if}}{{/unless}}{{#if arrowFunction}}{{#unless inlineDefaultArrow}} = {{/unless}}{{/if}}(
-  {{{getPropArgs props}}}
-  {{propType resourceName this}}
-){{#unless javascript}}{{#if returnType}}: JSX.Element {{/if}}{{/unless}}{{#if arrowFunction}} => {{/if}}{
 
+{{declarations}}
+
+{{#if forwardRef}}const {{resourceName}} = forwardRef{{{refParams this}}}({{/if}}
+{{exportDefinition this}}({{{getPropArgs props}}}{{propType resourceName this}}){{displayReturnType this}}
   {{#each state}}
   const [{{name}}, {{setter}}] = useState{{#if type}}<{{type}}>{{/if}}({{{getDefaultState type initialValue}}});
   {{/each}}
 
-  return (<{{#if extends}}{{extends}}{{else}}div{{/if}}{{#if css}} className={styles.{{cssRoot cssModuleRoot}} } {{/if}} {{#if (hasPropSpread this)}} {...props} {{/if}}{{#if (isSelfClosing extends)}}/{{/if}}>
+  {{logic}}
+
+  return (<{{#if extends}}{{extends}}{{else}}div{{/if}}{{#if css}} className={styles.{{cssRoot cssModuleRoot}} } {{/if}} {{#if forwardRef}} ref={ref} {{/if}} {{#if (hasPropSpread this)}} {...props} {{/if}}{{#if (isSelfClosing extends)}}/{{/if}}>
   {{#unless (isSelfClosing extends)}}
     {{#if hasChildren}}
       {children}
     {{/if}}
+    
+  {{content}}
+    
   </{{#if extends}}{{extends}}{{else}}div{{/if}}>);
   {{else}})
   {{/unless}}
 }
+{{#if forwardRef}}){{/if}}
 {{#unless inlineExport}}
 
 export {{#unless exportNamed}}default {{/unless}}{{resourceName}};

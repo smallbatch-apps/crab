@@ -10,35 +10,49 @@ The primary change to previous versions is that is has **lost** the ability to s
 
 ## Installation and basic usage
 
+If you want to, you can use the global `crab-cli` command. That makes a shorter command of `crab g MyComponent` but it is not required.
+
 ```
-npm install -g crab
+npm install -g crab-cli
 crab g components/Menu
+```
+
+The more common usage approach will be to just use npx. This will install the package locally and then execute it.
+
+```
+npx crab-cli g component Menu
 ```
 
 ## Usage
 
 ### generate
 
-Create a component file for React. By default this will be a typescript component but you can force it to javascript with the `--javascript` or `-j` flag.
+Create a component file for React. By default this will be a TypeScript component but you can force it to javascript with the `--javascript` or `-j` flag. Note that you shouldn't need to do this manually, and it is not recommended. Crab will note that the environment is JavaScript and will generate a JavaScript file. The `-j` flag is only really useful to make a JavaScript file in a TypeScript project.
 
 Simple example
 
 ```
-crab generate component components/Menu
+npx crab-cli generate component Menu
 ```
 
 As the `generate` command is aliased to `g`, and the following is identical.
 
 ```
-crab g component components/Menu
+npx crab-cli g component Menu
+```
+
+Last but not least though it's encouraged, `component` is also not required. Crab will assume you're making a component if you don't tell it something else.
+
+```
+npx crab-cli g Menu
 ```
 
 A `.tsx` is appended to the filename automatically and is not required, but is harmless and will not duplicate if accidentally added. (Obviously a .jsx file in the case of JavaScript files.)
 
-You can create a component in any directory structure as long as the structure itself already exists. Crab will not create the directory structure for you as a security precaution. The last thing you want is to end up with a component in components/ui/nav/components/ui/nav/.
+Crab will create the file in the current directory if you are inside a valid component directory, or in the `src/components` directory if you are not.
 
 ```
-crab g components/ui/nav/NavBar
+npx crab-cli g ui/nav/NavBar
 ```
 
 There are some more advanced options available that allow you to generate a more complete component. In particular you can pass through props, state values, and if you're extending a standard element type.
@@ -49,6 +63,7 @@ Options are:
 | ------------------------- | ----------------------------------------------------------------------------------------------- |
 | `-p, --props <props>`     | Comma separated list of props with optional types (e.g., name:string,active:boolean,children)   |
 | `-s, --state <state>`     | Comma separated list of state variables with optional types (e.g., count:number,isOpen:boolean) |
+| `--forwardRef`            | Create component as a forwardRef                                                                |
 | `--test`                  | Include a test file for the resource                                                            |
 | `--storybook`             | Include a Storybook story                                                                       |
 | `--css`                   | Include a CSS module file                                                                       |
@@ -59,7 +74,7 @@ Options are:
 Usage example:
 
 ```
-crab g component Button --props variant:string,children --extends button --env client --test --css
+npx crab-cli g component SubmitButton --props variant:string,children --extends button --env client --test --css
 ```
 
 Props and state have the same format: a comma separated list with optional types and default values separated by a colon. Default values are inferred from the type if not provided. Custom types can be used but they must be imported manually. String is the default if type is not set.
@@ -76,33 +91,15 @@ State works exactly the same. A useState hook is generated for each state variab
 
 There are a few minor features that are not immediately obvious. In the props list the values `children` and `...props` have special handling. The `...props` prop will be spread into the component automatically. The `children` prop will be added to the component automatically. A children prop is automatically typed as `React.ReactNode`, while the `...props` prop will not be included in the props type for the component.
 
-Note that the last two options are intended to facilitate scripted generation of components, and do not particularly help daily workflows.
-
-#### Page generation
-
-Crab can also generate pages in a NextJS application. If the application is not a NextJS application, this will generate an error. This is likely to be extended to support Remix, React Router, and other tools in the future, but NextJS was the lowest hanging fruit.
-
-```
-crab g page home
-```
-
-This will generate a `/app/home/page.tsx` file. The arguments given for components are not relevent here and only three arguments are available.
-
-| Option      | Description             |
-| ----------- | ----------------------- |
-| `--layout`  | Include a layout file   |
-| `--loading` | Include an loading file |
-| `--error`   | Include an error file   |
-
 #### crab
 
-The core purpose of the `crab` CLI package is to allow you to execute `crab crab`. This will output a 🦀.
+The command `crab` will allow you to generate crab by using `npx crab-cli crab`. This will output a 🦀.
 
 | Option        | Description                              |
 | ------------- | ---------------------------------------- |
 | `-a, --ascii` | outputs an orange (\\/)!\_!(\\/) instead |
 
-Note that future versions may allow variadic use of the `crab` keyword, potentially allowing the output of many more crabs. This is considered an advanced feature.
+This is mostly just used as a health check command to ensure that the package is loaded for testing and development.
 
 #### init
 
@@ -128,13 +125,14 @@ Genuine consideration will be given to additional configuration options if they 
   "returnType": false,                // include the return type JSX.Element on the function
   "cssModuleRoot": "container",       // the root class for the CSS module
   "componentDir": "src/components",   // the root element for the component
+  "lowercaseFilename": false,         // create a kebab-case filename eg submit-button.tsx
 }
 ```
 
 ### Advanced usage
 
 ```
-crab g component forms/CustomInput --props label:string,value:string,onChange:Function,error:string,disabled:boolean,required:boolean,children,...props --state isFocused:boolean:false,touched:boolean:false --extends input --env client --test --storybook --css
+npx crab-cli g forms/CustomInput --props label:string,value:string,onChange:Function,error:string,disabled:boolean,required:boolean,children,...props --state isFocused:boolean:false,touched:boolean:false --extends input --env client --test --storybook --css
 ```
 
 The above is probably a warcrime. But here is the output. First there's the actual component.

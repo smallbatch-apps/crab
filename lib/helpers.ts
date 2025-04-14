@@ -1,5 +1,7 @@
 import handlebars from "handlebars";
 import { PropState } from "./utils.js";
+import { relative, join } from "path";
+
 export default () => {
   handlebars.registerHelper("isChildren", function (name) {
     return name === "children";
@@ -24,6 +26,8 @@ export default () => {
   handlebars.registerHelper("propType", function (resourceName, options) {
     const { readonlyProps, props, javascript, reactFC } = options;
     if (javascript || reactFC || !props.length) return "";
+    if (options.forwardRef) return ", ref";
+
     return readonlyProps
       ? `: Readonly<${resourceName}Props>`
       : `: ${resourceName}Props`;
@@ -80,14 +84,10 @@ export default () => {
   });
 
   handlebars.registerHelper("getStoryDefault", function (type, defaultValue) {
-    console.log(
-      "type:",
-      type,
-      "defaultValue:",
-      defaultValue,
-      "typeof:",
-      typeof defaultValue
-    );
+    if (type === "ReactNode" && !defaultValue) {
+      return "<></>";
+    }
+
     if (!defaultValue) return '""';
 
     // Raw values
@@ -130,7 +130,6 @@ export default () => {
   handlebars.registerHelper(
     "propsDefinition",
     function (resourceName, options) {
-      console.log("propsDefinition", resourceName, options);
       const {
         typeProps,
         extends: hasExtends,
@@ -151,4 +150,133 @@ export default () => {
       }
     }
   );
+
+  handlebars.registerHelper("storybookTitle", function (templateOptions) {
+    const { rootDir, componentDir, finalPath, resourceName } = templateOptions;
+
+    const relativePath = relative(join(rootDir, componentDir), finalPath);
+
+    const pathArray = relativePath.split("/").map((segment) => {
+      if (segment.toLowerCase() === "ui") return "UI";
+      return segment
+        .split("-")
+        .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+        .join("");
+    });
+
+    const title = ["Components", ...pathArray, resourceName].join("/");
+    return `"${title}"`;
+  });
+
+  handlebars.registerHelper("exportDefinition", function (options) {
+    let string = "";
+    if (options.inlineExport) {
+      string = "export ";
+      if (!options.exportNamed) {
+        string += "default ";
+      }
+    }
+    if (options.arrowFunction && !options.inlineExport) {
+      string += "const ";
+    }
+
+    if (!options.arrowFunction) {
+      string += "function ";
+    }
+
+    if (
+      !options.arrowFunction ||
+      !options.inlineExport ||
+      options.exportNamed
+    ) {
+      string += options.resourceName;
+    }
+
+    if (options.reactFC) {
+      string += ": FC";
+      if (options.props.length) {
+        string += `<${options.resourceName}Props>`;
+      }
+    }
+
+    if (options.arrowFunction) {
+      string += " = ";
+    }
+
+    return string;
+  });
+
+  handlebars.registerHelper("displayReturnType", function (options) {
+    let string = "";
+
+    if (!options.javascript && options.returnType) {
+      string += ": JSX.Element";
+    }
+
+    string += options.arrowFunction ? " => {" : " {";
+
+    return string;
+  });
+
+  handlebars.registerHelper("refParams", function (options) {
+    if (!options.forwardRef || options.javascript) return "";
+
+    const refProps = options.props.length ? options.propName : "{}";
+    const refType = options.extends ? options.elementType : "HTMLElement";
+
+    return `<${refType}, ${refProps}>`;
+  });
+
+  handlebars.registerHelper("reactImports", function (options) {
+    // importReact
+    // hasChildren
+    // elementProps
+    // forwardRef
+    // useState
+
+    let imports = [];
+
+    if (options.hasChildren) {
+      imports.push("type ReactNode");
+    }
+
+    if (options.forwardRef) {
+      imports.push("forwardRef");
+    }
+
+    if (options.useState) {
+      imports.push("useState");
+    }
+
+    if (options.elementProps) {
+      imports.push("type " + options.elementProps);
+    }
+
+    if (options.reactFC) {
+      imports.push("type FC");
+    }
+
+    if (!imports.length && options.importReact) {
+      return `import React from "react";`;
+    }
+
+    const isTypesOnly = imports.every((i) => i.startsWith("type "));
+
+    imports = imports.map((i) => i.replace("type ", ""));
+
+    if (isTypesOnly) {
+      return `import type { ${imports.join(", ")} } from "react"`;
+    }
+
+    if (!imports.length && !options.importReact) {
+      return "";
+    }
+
+    const importString =
+      !imports.length && options.importReact
+        ? "React"
+        : `${isTypesOnly ? "type " : ""}{ ${imports.join(", ")} }`;
+
+    return `import ${importString} from "react"`;
+  });
 };
