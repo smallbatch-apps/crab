@@ -27,6 +27,7 @@ export default () => {
     const { readonlyProps, props, javascript, reactFC } = options;
     if (javascript || reactFC || !props.length) return "";
     if (options.forwardRef) return ", ref";
+    if (options.justProps) resourceName = "";
 
     return readonlyProps
       ? `: Readonly<${resourceName}Props>`
@@ -135,7 +136,10 @@ export default () => {
         extends: hasExtends,
         elementProps,
         elementType,
+        justProps,
       } = options;
+
+      if (justProps) resourceName = "";
 
       if (typeProps) {
         // Type syntax

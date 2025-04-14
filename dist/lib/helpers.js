@@ -111,7 +111,10 @@ export default () => {
         extends: hasExtends,
         elementProps,
         elementType,
+        justProps,
       } = options;
+
+      if (justProps) resourceName = "";
       if (typeProps) {
         // Type syntax
         return `type ${resourceName}Props = ${hasExtends ? `${elementProps}<${elementType}> & ` : ""}{`;

@@ -1,4 +1,4 @@
-# CRAB V3 - Revenge of the Crab
+# CRAB V2 - Revenge of the Crab
 
 ## Overview
 
@@ -10,7 +10,7 @@ The primary change to previous versions is that is has **lost** the ability to s
 
 ## Installation and basic usage
 
-If you want to, you can use the global `crab-cli` command. That makes a shorter command of `crab g MyComponent` but it is not required.
+If you want to, you can use the globally installed `crab-cli` command. That makes a shorter command of `crab g MyComponent` but it is not required.
 
 ```
 npm install -g crab-cli
@@ -132,7 +132,7 @@ Genuine consideration will be given to additional configuration options if they 
 ### Advanced usage
 
 ```
-npx crab-cli g forms/CustomInput --props label:string,value:string,onChange:Function,error:string,disabled:boolean,required:boolean,children,...props --state isFocused:boolean:false,touched:boolean:false --extends input --env client --test --storybook --css
+npx crab-cli g forms/CustomButton --props label:string,value:string,error:string,disabled:boolean,required:boolean,children,...props --state isFocused:boolean:false,touched:boolean:false --extends input --env client --test --storybook --css
 ```
 
 The above is probably a warcrime. But here is the output. First there's the actual component.
@@ -143,54 +143,53 @@ The above is probably a warcrime. But here is the output. First there's the actu
 import { useState } from "react";
 import styles from "./CustomInput.module.css";
 
-interface CustomInputProps extends InputHTMLAttributes<HTMLInputElement> {
+interface CustomButtonProps extends InputHTMLAttributes<HTMLButtonElement> {
   label: string;
   value: string;
-  onChange: Function;
   error: string;
   disabled: boolean;
   required: boolean;
   children: React.ReactNode;
 }
 
-function CustomInput({
+function CustomButton({
   label,
   value,
-  onChange,
   error,
   disabled,
   required,
   children,
   ...props
 }: CustomInputProps) {
-  const [isFocused, setIsFocused] = useState<boolean>();
-  const [touched, setTouched] = useState<boolean>();
+  const [isFocused, setIsFocused] = useState<boolean>(false);
+  const [touched, setTouched] = useState<boolean>(false);
 
-  return <input className={styles.container} {...props} />;
+  return <button className={styles.container} {...props}>
+    {children}
+  </button>;
 }
 
-export default CustomInput;
+export default CustomButton;
 ```
 
 And a storybook file.
 
 ```
 import type { Meta, StoryObj } from "@storybook/react";
-import CustomInput from "./CustomInput";
+import CustomButton from "./CustomButton";
 
-const meta: Meta<typeof CustomInput> = {
-  component: CustomInput,
-  title: "Components/CustomInput",
+const meta: Meta<typeof CustomButton> = {
+  component: CustomButton,
+  title: "Components/Forms/CustomButton",
 };
 
 export default meta;
-type Story = StoryObj<typeof CustomInput>;
+type Story = StoryObj<typeof CustomButton>;
 
 export const Default: Story = {
   args: {
     label: "",
     value: "",
-    onChange: "",
     error: "",
     disabled: false,
     required: false,
@@ -202,3 +201,47 @@ export const Empty: Story = {
   args: {},
 };
 ```
+
+and a test file - vitest in this case.
+
+```
+import { render, screen } from '@testing-library/react';
+import CustomButton from './CustomButton';
+import { describe, it, expect } from 'vitest';
+
+describe('CustomInput', () => {
+  const defaultProps = {
+    label: "",
+    value: "",
+    error: "",
+    disabled: false,
+    required: false,
+    children: "",
+  };
+
+  it('renders without crashing', () => {
+    render(<CustomButton {...defaultProps} />);
+  });
+
+  it('renders children when passed', () => {
+    render(
+      <CustomButton {...defaultProps}>
+        Child Content
+      </CustomButton>
+    );
+
+    expect(screen.getByText('Child Content')).toBeInTheDocument();
+  });
+
+});
+```
+
+### Real world usage
+
+The fact is most components aren't really that complicated, and there's no need to overdo the command to generate them. You don't need exhaustive props, extensive state, or whatever. Personally I typically use something like the following:
+
+```
+npx crab-cli g component ui/Card --props children,...props -x div
+```
+
+This generates all the fiddliest boilerplate, and I can add to it as needed.
