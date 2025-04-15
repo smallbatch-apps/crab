@@ -232,12 +232,6 @@ export default () => {
   });
 
   handlebars.registerHelper("reactImports", function (options) {
-    // importReact
-    // hasChildren
-    // elementProps
-    // forwardRef
-    // useState
-
     let imports = [];
 
     if (options.hasChildren) {
