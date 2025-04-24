@@ -174,20 +174,10 @@ export const generatePropArgs = (props) => {
 };
 export const resolvePaths = (templateOptions) => {
     const cwd = process.cwd();
-    const rootDir = findProjectRoot() ?? "";
     const { componentDir, path } = templateOptions;
-    // const compFullPath = resolve(rootDir, componentDir);
-    const isInComponentDir = cwd.startsWith(componentDir);
-    console.log("isInComponentDir", isInComponentDir);
-    console.log("cwd: ", cwd);
-    console.log("path: ", path);
-    console.log("rootDir: ", rootDir);
-    console.log("componentDir: ", componentDir);
-    // console.log("compFullPath", compFullPath);
-    const finalPath = isInComponentDir
+    const finalPath = cwd.startsWith(componentDir)
         ? resolve(cwd, path)
         : resolve(componentDir, path);
-    console.log("Final path", finalPath);
     return finalPath;
 };
 export const toKebabCase = (name) => {

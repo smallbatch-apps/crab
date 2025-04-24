@@ -89,8 +89,6 @@ export const generateComponent = async (templateOptions) => {
     const template = handlebars.compile(templateContent);
     const finishedTemplate = await prettify(template(templateOptions));
     const filename = buildComponentPath(templateOptions);
-    console.log("MY PATH");
-    console.log(filename);
     if (existsSync(filename)) {
         console.log("File already exists: ", filename);
         return;
