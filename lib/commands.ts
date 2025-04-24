@@ -257,6 +257,7 @@ function parseComponentPath(fullPath: string) {
 function buildComponentPath(templateOptions: TemplateOptions) {
   const path = templateOptions.finalPath;
   const name = templateOptions.filename;
+
   return format({
     dir: relative(process.cwd(), path),
     name,

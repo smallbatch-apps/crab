@@ -1,5 +1,5 @@
 import { existsSync, readFileSync } from "fs";
-import { dirname, join } from "path";
+import { dirname, join, resolve } from "path";
 import prettier from "prettier";
 import * as ts from "typescript";
 // import * as path from 'path';
@@ -218,18 +218,11 @@ export const generatePropArgs = (props: PropState[]) => {
 
 export const resolvePaths = (templateOptions: Record<string, any>) => {
   const cwd = process.cwd();
-  const rootDir = findProjectRoot() ?? "";
   const { componentDir, path } = templateOptions;
 
-  const compFullPath = join(rootDir, componentDir);
-
-  const isInComponentDir = cwd.startsWith(compFullPath);
-
-  const finalPath = isInComponentDir
-    ? join(cwd, path)
-    : join(compFullPath, path);
-
-  console.log("Final path", finalPath);
+  const finalPath = cwd.startsWith(componentDir)
+    ? resolve(cwd, path)
+    : resolve(componentDir, path);
 
   return finalPath;
 };
